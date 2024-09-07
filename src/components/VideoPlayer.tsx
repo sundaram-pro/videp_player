@@ -1,78 +1,117 @@
-import React from 'react'
+import React, { useState, useRef } from 'react';
 
-interface VideoPlayer {
+interface VideoPlayerProps {
   title?: string;
   urlInput: string;
   heightInput: number;
   widthInput: number;
-  subtitlesInput: string; //maybe we change it later
+  subtitlesInput: string;
   setQuality: any;
   videoTimeInput: number;
   setVideoTime: any;
 }
 
-const VideoPlayer = ({ title, urlInput, heightInput, widthInput, subtitlesInput, setQuality, videoTimeInput, setVideoTime }: VideoPlayer) => {
+const VideoPlayer = ({ 
+  title, 
+  urlInput, 
+  heightInput, 
+  widthInput, 
+  subtitlesInput, 
+  setQuality, 
+  videoTimeInput, 
+  setVideoTime 
+}: VideoPlayerProps) => {
 
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  function extractYouTubeParams(urlInput) {
-    // Regular expression to match the video ID and optional time parameter
+  function togglePlayPause() {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  }
+
+  function extractYouTubeParams(urlInput: string) {
     const regex = /[?&]v=([a-zA-Z0-9_-]+).*?[&]?t=([0-9]+)s?/;
-
-    // Execute the regex on the given URL
     const match = urlInput.match(regex);
-
-    // If a match is found, extract the video ID and time
     if (match) {
-      const videoId = match[1]; // Video ID
-      const timeInSeconds = match[2] ? parseInt(match[2]) : null; // Time in seconds, if present
+      const videoId = match[1];
+      const timeInSeconds = match[2] ? parseInt(match[2]) : null;
       return { videoId, timeInSeconds };
     }
-
-    // Return null if no match is found
     return null;
   }
 
-  const isYoutubeUrl = (url: string) => {
+  const isYouTubeUrl = (url: string) => {
     const regex = /^https:\/\/www\.youtube\.com\/watch\?v=[a-zA-Z0-9_-]+/;
-    //If you want to include the optional t=<time> part (for a timestamp):
-    //const regex = /^https:\/\/www\.youtube\.com\/watch\?v=[a-zA-Z0-9_-]+(&t=[0-9]+s)?/;
     return regex.test(url);
   };
 
-  if (isYoutubeUrl(urlInput)) {
+  if (isYouTubeUrl(urlInput)) {
+    const { videoId } = extractYouTubeParams(urlInput) || {};
+    const newUrl = `https://www.youtube.com/embed/${videoId}`;
 
-
-
-    const { videoId, timeInSeconds } = extractYouTubeParams(urlInput);
-    const newUrl = `https://www.youtube.com/embed/${videoId}`
-    // return <YoutubeRenderer url={vidUrl} />;
-    // <iframe src={urlInput} frameborder="0" width={widthInput} height={heightInput}></iframe>
     return (
-      <iframe
-        width="100%"
-        className="h-[80vh]"
-        height="500px"
-        src={newUrl}
-        title="YouTube video player"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowFullScreen
-      ></iframe>
-    )
-
-  }
-  else {
-    return (
-      <div>
-
-        <video width={widthInput} height={heightInput} controls >
-          <source src={urlInput} type="video/mp4" />
-        </video>
-
+      <div className="relative w-full">
+        <iframe
+          width={widthInput}
+          height={heightInput}
+          className="rounded-lg shadow-lg h-[80vh]"
+          src={newUrl}
+          title={title || "YouTube video player"}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        ></iframe>
       </div>
-    )
+    );
   }
 
+  return (
+    <div className="relative w-full flex justify-center items-center bg-black rounded-lg shadow-lg ">
+      <video
+        ref={videoRef}
+        width={widthInput}
+        height={heightInput}
+        className="rounded-lg"
+        controls={false} // Disable default controls
+        onTimeUpdate={(e) => setVideoTime(e.currentTarget.currentTime)}
+      >
+        <source src={urlInput} type="video/mp4" />
+        {subtitlesInput && <track kind="subtitles" src={subtitlesInput} />}
+        
+      </video>
 
-}
+      <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center bg-red-400 z-50">
+        <button 
+          onClick={togglePlayPause} 
+          className="text-white p-2 bg-gray-800 rounded-lg hover:bg-gray-700"
+        >
+          {isPlaying ? 'Pause' : 'Play'}
+        </button>
+        <button 
+          onClick={togglePlayPause} 
+          className="text-white p-2 bg-gray-800 rounded-lg hover:bg-gray-700"
+        >
+          {isPlaying ? 'Pause' : 'Play'}
+        </button>
+        <button 
+          onClick={togglePlayPause} 
+          className="text-white p-2 bg-gray-800 rounded-lg hover:bg-gray-700"
+        >
+          {isPlaying ? 'Pause' : 'Play'}
+        </button>
+        {/* Add additional custom controls like volume, full-screen, etc. */}
+      </div>
 
-export default VideoPlayer
+      {/* Custom Controls */}
+      
+    </div>
+  );
+};
+
+export default VideoPlayer;
